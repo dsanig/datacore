@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Server, TestTube, FolderOpen, RefreshCw } from "lucide-react";
+import { Server, TestTube, FolderOpen, RefreshCw, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function FTPConnection() {
   const [config, setConfig] = useState({
@@ -17,7 +19,53 @@ export default function FTPConnection() {
     passiveMode: true,
   });
   const [testing, setTesting] = useState(false);
+  const [listing, setListing] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [files, setFiles] = useState<string[]>([]);
+
+  const invokeFunction = async (action: "test" | "list") => {
+    const { data, error } = await supabase.functions.invoke("ftp-operations", {
+      body: { action, ...config },
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await invokeFunction("test");
+      setTestResult({ success: result.success, message: result.message || result.error });
+      if (result.success) {
+        toast.success("FTP connection successful");
+      } else {
+        toast.error(result.error || "Connection failed");
+      }
+    } catch (err: any) {
+      setTestResult({ success: false, message: err.message });
+      toast.error(err.message);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleListFiles = async () => {
+    setListing(true);
+    try {
+      const result = await invokeFunction("list");
+      if (result.success) {
+        setFiles(result.files || []);
+        toast.success(`Found ${result.files?.length || 0} files`);
+      } else {
+        toast.error(result.error || "Failed to list files");
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setListing(false);
+    }
+  };
 
   return (
     <div className="page-container">
@@ -67,12 +115,20 @@ export default function FTPConnection() {
               </div>
               <Switch checked={config.passiveMode} onCheckedChange={(v) => setConfig({ ...config, passiveMode: v })} />
             </div>
+
+            {testResult && (
+              <div className={`flex items-center gap-2 rounded-lg border p-3 ${testResult.success ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
+                {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                <span className="text-sm">{testResult.message}</span>
+              </div>
+            )}
+
             <div className="flex gap-2 pt-2">
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => toast.info("Settings saved locally")}>
                 Save Settings
               </Button>
-              <Button variant="outline" className="gap-2" onClick={() => setTesting(true)}>
-                <TestTube className="h-4 w-4" />
+              <Button variant="outline" className="gap-2" onClick={handleTest} disabled={testing || !config.host || !config.username}>
+                {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <TestTube className="h-4 w-4" />}
                 Test Connection
               </Button>
             </div>
@@ -88,8 +144,8 @@ export default function FTPConnection() {
             <CardDescription>Files available on the FTP server</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full gap-2 mb-4">
-              <RefreshCw className="h-4 w-4" />
+            <Button variant="outline" className="w-full gap-2 mb-4" onClick={handleListFiles} disabled={listing || !config.host || !config.username}>
+              {listing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               List Files
             </Button>
             {files.length === 0 ? (
@@ -102,7 +158,7 @@ export default function FTPConnection() {
                 {files.map((f) => (
                   <div key={f} className="flex items-center justify-between rounded border p-2">
                     <span className="font-mono text-sm">{f}</span>
-                    <Badge variant="outline">pgp</Badge>
+                    <Badge variant="outline">{f.endsWith(".pgp") || f.endsWith(".gpg") ? "pgp" : f.split(".").pop()}</Badge>
                   </div>
                 ))}
               </div>
