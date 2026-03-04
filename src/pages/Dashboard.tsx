@@ -12,17 +12,11 @@ import {
   Server,
 } from "lucide-react";
 
-const recentRuns = [
-  { id: "run-001", config: "MTMP Mark-to-Market", file: "GLOBAL_DAILY.20260220.20260220.csv.pgp", status: "success", rows: 1247, duration: "3.2s", time: "2026-03-03 08:15:00" },
-  { id: "run-002", config: "Risk Report", file: "RISK_DAILY.20260220.20260220.csv.pgp", status: "success", rows: 892, duration: "2.1s", time: "2026-03-03 08:15:01" },
-  { id: "run-003", config: "MTMP Mark-to-Market", file: "GLOBAL_DAILY.20260219.20260219.csv.pgp", status: "error", rows: 0, duration: "0.4s", time: "2026-03-02 08:15:00" },
-];
-
 const stats = [
-  { label: "Files Processed", value: "1,247", icon: FileText, trend: "+12 today" },
-  { label: "Active Configs", value: "4", icon: Database, trend: "2 scheduled" },
-  { label: "Last Run", value: "08:15", icon: Clock, trend: "3 min ago" },
-  { label: "FTP Status", value: "Connected", icon: Server, trend: "Healthy" },
+  { label: "Files Processed", value: "0", icon: FileText, trend: "—" },
+  { label: "Active Configs", value: "0", icon: Database, trend: "—" },
+  { label: "Last Run", value: "—", icon: Clock, trend: "No runs yet" },
+  { label: "FTP Status", value: "—", icon: Server, trend: "Not configured" },
 ];
 
 export default function Dashboard() {
@@ -63,35 +57,7 @@ export default function Dashboard() {
           <CardDescription>Latest ingestion activity</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {recentRuns.map((run) => (
-              <div
-                key={run.id}
-                className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  {run.status === "success" ? (
-                    <CheckCircle2 className="h-5 w-5 text-success" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-destructive" />
-                  )}
-                  <div>
-                    <p className="text-sm font-medium">{run.config}</p>
-                    <p className="text-xs font-mono text-muted-foreground">{run.file}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-right">
-                  <div>
-                    <p className="text-sm font-mono">{run.rows.toLocaleString()} rows</p>
-                    <p className="text-xs text-muted-foreground">{run.duration}</p>
-                  </div>
-                  <Badge variant={run.status === "success" ? "default" : "destructive"} className="text-xs">
-                    {run.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-muted-foreground text-center py-8">No runs yet. Configure an FTP connection and parser to get started.</p>
         </CardContent>
       </Card>
     </div>
