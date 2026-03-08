@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Server, TestTube, FolderOpen, RefreshCw, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Server, TestTube, FolderOpen, RefreshCw, CheckCircle2, XCircle, Loader2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -20,8 +20,69 @@ export default function FTPConnection() {
   });
   const [testing, setTesting] = useState(false);
   const [listing, setListing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [files, setFiles] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("ftp_settings")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setSettingsId(data.id);
+        setConfig({
+          host: data.host,
+          port: data.port,
+          username: data.username,
+          password: data.password,
+          remoteDir: data.remote_dir,
+          passiveMode: data.passive_mode,
+        });
+      }
+    } catch (err: any) {
+      console.error("Failed to load FTP settings:", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const row = {
+        host: config.host,
+        port: config.port,
+        username: config.username,
+        password: config.password,
+        remote_dir: config.remoteDir,
+        passive_mode: config.passiveMode,
+        updated_at: new Date().toISOString(),
+      };
+      if (settingsId) {
+        const { error } = await supabase.from("ftp_settings").update(row).eq("id", settingsId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from("ftp_settings").insert(row).select().single();
+        if (error) throw error;
+        setSettingsId(data.id);
+      }
+      toast.success("FTP settings saved");
+    } catch (err: any) {
+      toast.error("Failed to save: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const invokeFunction = async (action: "test" | "list") => {
     const { data, error } = await supabase.functions.invoke("ftp-operations", {
@@ -66,6 +127,14 @@ export default function FTPConnection() {
       setListing(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="page-container flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
@@ -124,7 +193,8 @@ export default function FTPConnection() {
             )}
 
             <div className="flex gap-2 pt-2">
-              <Button className="gap-2" onClick={() => toast.info("Settings saved locally")}>
+              <Button className="gap-2" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Settings
               </Button>
               <Button variant="outline" className="gap-2" onClick={handleTest} disabled={testing || !config.host || !config.username}>

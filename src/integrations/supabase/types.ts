@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ftp_settings: {
+        Row: {
+          created_at: string
+          host: string
+          id: string
+          passive_mode: boolean
+          password: string
+          port: string
+          remote_dir: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          host?: string
+          id?: string
+          passive_mode?: boolean
+          password?: string
+          port?: string
+          remote_dir?: string
+          updated_at?: string
+          username?: string
+        }
+        Update: {
+          created_at?: string
+          host?: string
+          id?: string
+          passive_mode?: boolean
+          password?: string
+          port?: string
+          remote_dir?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      pgp_settings: {
+        Row: {
+          created_at: string
+          id: string
+          passphrase: string
+          private_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          passphrase?: string
+          private_key?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          passphrase?: string
+          private_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
